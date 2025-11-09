@@ -1,0 +1,212 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>SAMIMIESS APP — Mini dApp</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.min.js"></script>
+  <style>
+    body { 
+      font-family: 'Comic Sans MS', Arial, sans-serif; 
+      margin: 0; 
+      background: linear-gradient(to bottom, #fff0f5, #e0ffe0, #f0fff0); 
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* Side flowers (Huge & scattered) */
+    .flower-left, .flower-right {
+      position: fixed;
+      top: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 40px;
+      z-index: 1;
+      width: 220px;
+    }
+    .flower-left { left: 0; }
+    .flower-right { right: 0; }
+
+    .flower-left img, .flower-right img {
+      width: 140px;
+      height: 140px;
+      border-radius: 50%;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+      object-fit: cover;
+      transform: rotate(-10deg);
+    }
+
+    /* Main content card */
+    .container {
+      background: #fff8f0;
+      border-radius: 25px;
+      box-shadow: 0 8px 25px rgba(0,0,0,0.35);
+      padding: 50px;
+      max-width: 800px;
+      width: 90%;
+      z-index: 2;
+      margin: 50px 20px;
+      border: 4px solid #ffb6c1;
+    }
+
+    h1 { color: #ff1493; text-align: center; }
+    h2, h3 { color: #8e44ad; }
+    input { 
+      margin: 5px 0; 
+      padding: 12px; 
+      width: 240px; 
+      border-radius: 12px; 
+      border: 2px solid #9b59b6;
+      background: #fefefe;
+    }
+    button { 
+      margin: 5px 5px 5px 0; 
+      padding: 12px 25px; 
+      border-radius: 12px; 
+      border: none; 
+      background: #e91e63; 
+      color: white; 
+      cursor: pointer;
+      font-weight: bold;
+    }
+    button:hover { background: #ff4081; }
+    hr { margin: 30px 0; border: 2px dashed #f39c12; }
+    p, span { font-size: 16px; color: #34495e; }
+    #walletStatus { font-weight: bold; color: #27ae60; }
+    #contractAddress { color: #16a085; }
+
+    @media (max-width: 800px) {
+      .flower-left, .flower-right { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Left flowers -->
+  <div class="flower-left">
+    <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/4/4f/Flower_icon.svg/1200px-Flower_icon.svg.png" alt="flower">
+    <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/1/10/Flower_icon2.svg/1024px-Flower_icon2.svg.png" alt="flower">
+    <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/6/66/Flower_icon3.svg/1024px-Flower_icon3.svg.png" alt="flower">
+    <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/0/02/Flower_icon4.svg/1024px-Flower_icon4.svg.png" alt="flower">
+  </div>
+
+  <!-- Right flowers -->
+  <div class="flower-right">
+    <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/4/4f/Flower_icon.svg/1200px-Flower_icon.svg.png" alt="flower">
+    <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/1/10/Flower_icon2.svg/1024px-Flower_icon2.svg.png" alt="flower">
+    <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/6/66/Flower_icon3.svg/1024px-Flower_icon3.svg.png" alt="flower">
+    <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/0/02/Flower_icon4.svg/1024px-Flower_icon4.svg.png" alt="flower">
+  </div>
+
+  <!-- Main content -->
+  <div class="container">
+    <header>
+      <h1>SAMIMIESS APP</h1>
+      <p>Simple dApp for storing a number and a short message on Remix JS VM</p>
+    </header>
+
+    <section>
+      <h2>Features</h2>
+      <ul>
+        <li>Read and write a numeric value</li>
+        <li>Read and write a short message</li>
+        <li>Connect wallet via Remix JS VM</li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>Wallet & Contract Controls</h2>
+      <p id="walletStatus">Wallet: Not connected</p>
+      <button id="connectBtn">Connect Wallet (JS VM)</button>
+      <hr/>
+      <div>
+        <h3>Value</h3>
+        <p>Current value: <span id="currentValue">-</span></p>
+        <input id="setValueInput" type="number" placeholder="Enter new number" />
+        <button id="setValueBtn">Set Value</button>
+        <input id="incValueInput" type="number" placeholder="Delta (e.g. 1)" />
+        <button id="incValueBtn">Increment</button>
+        <button id="readValueBtn">Read Value</button>
+      </div>
+
+      <hr/>
+      <div>
+        <h3>Message</h3>
+        <p>Current message: <span id="currentMessage">-</span></p>
+        <input id="setMessageInput" type="text" placeholder="Enter a short message" />
+        <button id="setMessageBtn">Set Message</button>
+        <button id="readMessageBtn">Read Message</button>
+      </div>
+
+      <hr/>
+      <div>
+        <h3>Misc</h3>
+        <p>Contract address: <span id="contractAddress">(add after deploy)</span></p>
+        <button id="showOwnerBtn">Show Contract Owner</button>
+        <p id="ownerAddr">-</p>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    const contractAddress = "0xd9145CCE52D386f254917e481eB44e9943F39138"; 
+    const contractABI = [ /* same ABI as before */ ];
+
+    let provider;
+    let signer;
+    let contract;
+
+    async function init() {
+      provider = new ethers.providers.Web3Provider(window.ethereum || null);
+      signer = provider.getSigner();
+      contract = new ethers.Contract(contractAddress, contractABI, signer);
+      document.getElementById("walletStatus").innerText = "Wallet: Connected (JS VM)";
+      document.getElementById("walletStatus").style.color = "#27ae60";
+      document.getElementById("contractAddress").innerText = contractAddress;
+    }
+
+    init();
+
+    document.getElementById("readValueBtn").onclick = async () => {
+      const val = await contract.getValue();
+      document.getElementById("currentValue").innerText = val.toString();
+    };
+
+    document.getElementById("setValueBtn").onclick = async () => {
+      const newVal = document.getElementById("setValueInput").value;
+      await contract.setValue(newVal);
+      document.getElementById("currentValue").innerText = newVal;
+    };
+
+    document.getElementById("incValueBtn").onclick = async () => {
+      const delta = document.getElementById("incValueInput").value;
+      const newVal = await contract.increment(delta);
+      document.getElementById("currentValue").innerText = newVal.toString();
+    };
+
+    document.getElementById("readMessageBtn").onclick = async () => {
+      const msg = await contract.getMessage();
+      document.getElementById("currentMessage").innerText = msg;
+    };
+
+    document.getElementById("setMessageBtn").onclick = async () => {
+      const msg = document.getElementById("setMessageInput").value;
+      await contract.setMessage(msg);
+      document.getElementById("currentMessage").innerText = msg;
+    };
+
+    document.getElementById("showOwnerBtn").onclick = async () => {
+      const owner = await contract.getOwner();
+      document.getElementById("ownerAddr").innerText = owner;
+    };
+
+    document.getElementById("connectBtn").onclick = () => {
+      document.getElementById("walletStatus").innerText = "Wallet: Connected (JS VM)";
+      document.getElementById("walletStatus").style.color = "#27ae60";
+    };
+  </script>
+</body>
+</html>
